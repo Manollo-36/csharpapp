@@ -1,7 +1,40 @@
 @HostAddress = http://localhost:5225
-@Version = v1
+@Version = v1.0
 
-GET {{HostAddress}}/api/{{Version}}/getproducts
+### Get all products
+GET {{HostAddress}}/api/{{Version}}/products
 Accept: application/json
+
+### Get product by ID
+GET {{HostAddress}}/api/{{Version}}/products/1
+Accept: application/json
+
+### Create new product
+POST {{HostAddress}}/api/{{Version}}/products
+Content-Type: application/json
+
+{
+  "title": "Test Product",
+  "price": 99.99,
+  "description": "A test product created via API",
+  "categoryId": 1,
+  "images": [
+    "https://i.imgur.com/1twoaDy.jpeg",
+    "https://i.imgur.com/FDwQgLy.jpeg"
+  ]
+}
+
+### Update product
+PUT {{HostAddress}}/api/{{Version}}/products/1
+Content-Type: application/json
+
+{
+  "title": "Updated Product Name",
+  "price": 149.99,
+  "description": "Updated description for the product"
+}
+
+### Delete product
+DELETE {{HostAddress}}/api/{{Version}}/products/1
 
 ###

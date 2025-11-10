@@ -23,12 +23,51 @@ if (app.Environment.IsDevelopment())
 
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/getproducts", async (IProductsService productsService) =>
+// Products endpoints
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
     {
         var products = await productsService.GetProducts();
-        return products;
+        return Results.Ok(products);
     })
     .WithName("GetProducts")
+    .HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+    {
+        var product = await productsService.GetProductById(id);
+        return product != null ? Results.Ok(product) : Results.NotFound($"Product with ID {id} not found");
+    })
+    .WithName("GetProductById")
+    .HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (CreateProductRequest request, IProductsService productsService) =>
+    {
+        if (string.IsNullOrWhiteSpace(request.Title))
+            return Results.BadRequest("Product title is required");
+
+        if (request.Price <= 0)
+            return Results.BadRequest("Product price must be greater than 0");
+
+        var product = await productsService.CreateProduct(request);
+        return product != null ? Results.Created($"api/v1.0/products/{product.Id}", product) : Results.BadRequest("Failed to create product");
+    })
+    .WithName("CreateProduct")
+    .HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/products/{id:int}", async (int id, UpdateProductRequest request, IProductsService productsService) =>
+    {
+        var product = await productsService.UpdateProduct(id, request);
+        return product != null ? Results.Ok(product) : Results.NotFound($"Product with ID {id} not found");
+    })
+    .WithName("UpdateProduct")
+    .HasApiVersion(1.0);
+
+versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+    {
+        var success = await productsService.DeleteProduct(id);
+        return success ? Results.NoContent() : Results.NotFound($"Product with ID {id} not found");
+    })
+    .WithName("DeleteProduct")
     .HasApiVersion(1.0);
 
 app.Run();
