@@ -6,11 +6,9 @@ namespace CSharpApp.Infrastructure.Configuration;
 
 public static class HttpConfiguration
 {
-    public static IServiceCollection AddHttpConfiguration(this IServiceCollection services)
+    public static IServiceCollection AddHttpConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
-        var serviceProvider = services.BuildServiceProvider();
-        var configuration = serviceProvider.GetService<IConfiguration>();
-        var restApiSettings = configuration!.GetSection(nameof(RestApiSettings)).Get<RestApiSettings>();
+        var restApiSettings = configuration.GetSection(nameof(RestApiSettings)).Get<RestApiSettings>();
         var httpClientSettings = configuration.GetSection(nameof(HttpClientSettings)).Get<HttpClientSettings>();
 
         // Register performance logging handler
