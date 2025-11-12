@@ -37,4 +37,37 @@ Content-Type: application/json
 ### Delete product
 DELETE {{HostAddress}}/api/{{Version}}/products/1
 
+### Get all categories
+GET {{HostAddress}}/api/{{Version}}/categories
+Accept: application/json
+
+### Get category by ID
+GET {{HostAddress}}/api/{{Version}}/categories/1
+Accept: application/json
+
+### Create new category
+POST {{HostAddress}}/api/{{Version}}/categories
+Content-Type: application/json
+
+{
+  "name": "Test Category",
+  "image": "https://i.imgur.com/QkIa5tT.jpeg"
+}
+
+### Update category
+PUT {{HostAddress}}/api/{{Version}}/categories/1
+Content-Type: application/json
+
+{
+  "name": "Updated Category Name",
+  "image": "https://i.imgur.com/NewImage.jpeg"
+}
+
+### Delete category
+DELETE {{HostAddress}}/api/{{Version}}/categories/1
+
+### Test JWT Authentication
+GET {{HostAddress}}/api/{{Version}}/auth/test
+Accept: application/json
+
 ###
