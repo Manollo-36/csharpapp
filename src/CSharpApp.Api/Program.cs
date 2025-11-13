@@ -1,4 +1,9 @@
 using Microsoft.Extensions.Options;
+using CSharpApp.Core.CQRS;
+using CSharpApp.Application.Products.Queries;
+using CSharpApp.Application.Products.Commands;
+using CSharpApp.Application.Categories.Queries;
+using CSharpApp.Application.Categories.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,24 +33,26 @@ app.UseMiddleware<CSharpApp.Infrastructure.Middleware.PerformanceLoggingMiddlewa
 
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
 
-// Products endpoints
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IProductsService productsService) =>
+// Products endpoints using CQRS
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products", async (IMediator mediator) =>
     {
-        var products = await productsService.GetProducts();
+        var query = new GetProductsQuery();
+        var products = await mediator.Send(query);
         return Results.Ok(products);
     })
     .WithName("GetProducts")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/products/{id:int}", async (int id, IMediator mediator) =>
     {
-        var product = await productsService.GetProductById(id);
+        var query = new GetProductByIdQuery(id);
+        var product = await mediator.Send(query);
         return product != null ? Results.Ok(product) : Results.NotFound($"Product with ID {id} not found");
     })
     .WithName("GetProductById")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (CreateProductRequest request, IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", async (CreateProductRequest request, IMediator mediator) =>
     {
         if (string.IsNullOrWhiteSpace(request.Title))
             return Results.BadRequest("Product title is required");
@@ -53,67 +60,81 @@ versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/products", asyn
         if (request.Price <= 0)
             return Results.BadRequest("Product price must be greater than 0");
 
-        var product = await productsService.CreateProduct(request);
+        var command = new CreateProductCommand(request.Title, request.Price, request.Description, request.CategoryId, request.Images);
+        var product = await mediator.Send(command);
         return product != null ? Results.Created($"api/v1.0/products/{product.Id}", product) : Results.BadRequest("Failed to create product");
     })
     .WithName("CreateProduct")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/products/{id:int}", async (int id, UpdateProductRequest request, IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/products/{id:int}", async (int id, UpdateProductRequest request, IMediator mediator) =>
     {
-        var product = await productsService.UpdateProduct(id, request);
+        var command = new UpdateProductCommand(
+            id, 
+            request.Title ?? string.Empty, 
+            request.Price ?? 0, 
+            request.Description ?? string.Empty, 
+            request.CategoryId ?? 0, 
+            request.Images ?? new List<string>());
+        var product = await mediator.Send(command);
         return product != null ? Results.Ok(product) : Results.NotFound($"Product with ID {id} not found");
     })
     .WithName("UpdateProduct")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/products/{id:int}", async (int id, IProductsService productsService) =>
+versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/products/{id:int}", async (int id, IMediator mediator) =>
     {
-        var success = await productsService.DeleteProduct(id);
+        var command = new DeleteProductCommand(id);
+        var success = await mediator.Send(command);
         return success ? Results.NoContent() : Results.NotFound($"Product with ID {id} not found");
     })
     .WithName("DeleteProduct")
     .HasApiVersion(1.0);
 
-// Categories endpoints
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (ICategoriesService categoriesService) =>
+// Categories endpoints using CQRS
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories", async (IMediator mediator) =>
     {
-        var categories = await categoriesService.GetCategories();
+        var query = new GetCategoriesQuery();
+        var categories = await mediator.Send(query);
         return Results.Ok(categories);
     })
     .WithName("GetCategories")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapGet("api/v{version:apiVersion}/categories/{id:int}", async (int id, IMediator mediator) =>
     {
-        var category = await categoriesService.GetCategoryById(id);
+        var query = new GetCategoryByIdQuery(id);
+        var category = await mediator.Send(query);
         return category != null ? Results.Ok(category) : Results.NotFound($"Category with ID {id} not found");
     })
     .WithName("GetCategoryById")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", async (CreateCategoryRequest request, ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapPost("api/v{version:apiVersion}/categories", async (CreateCategoryRequest request, IMediator mediator) =>
     {
         if (string.IsNullOrWhiteSpace(request.Name))
             return Results.BadRequest("Category name is required");
 
-        var category = await categoriesService.CreateCategory(request);
+        var command = new CreateCategoryCommand(request.Name, request.Image);
+        var category = await mediator.Send(command);
         return category != null ? Results.Created($"api/v1.0/categories/{category.Id}", category) : Results.BadRequest("Failed to create category");
     })
     .WithName("CreateCategory")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:int}", async (int id, UpdateCategoryRequest request, ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapPut("api/v{version:apiVersion}/categories/{id:int}", async (int id, UpdateCategoryRequest request, IMediator mediator) =>
     {
-        var category = await categoriesService.UpdateCategory(id, request);
+        var command = new UpdateCategoryCommand(id, request.Name ?? string.Empty, request.Image ?? string.Empty);
+        var category = await mediator.Send(command);
         return category != null ? Results.Ok(category) : Results.NotFound($"Category with ID {id} not found");
     })
     .WithName("UpdateCategory")
     .HasApiVersion(1.0);
 
-versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/categories/{id:int}", async (int id, ICategoriesService categoriesService) =>
+versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/categories/{id:int}", async (int id, IMediator mediator) =>
     {
-        var success = await categoriesService.DeleteCategory(id);
+        var command = new DeleteCategoryCommand(id);
+        var success = await mediator.Send(command);
         return success ? Results.NoContent() : Results.NotFound($"Category with ID {id} not found");
     })
     .WithName("DeleteCategory")
