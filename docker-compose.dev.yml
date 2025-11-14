@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  csharpapp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
+    container_name: csharpapp-api-dev
+    ports:
+      - "5225:8080"
+      - "7225:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - RestApiSettings__BaseUrl=https://api.escuelajs.co/api/v1/
+      - RestApiSettings__Products=products
+      - RestApiSettings__Categories=categories
+      - RestApiSettings__Auth=auth/login
+      - RestApiSettings__Username=john@mail.com
+      - RestApiSettings__Password=changeme
+      - HttpClientSettings__LifeTime=10
+      - HttpClientSettings__RetryCount=2
+      - HttpClientSettings__SleepDuration=100
+      - Performance__SlowRequestThresholdMs=500
+      - Performance__LogAllRequests=true
+      - Performance__IncludeBodySizes=true
+      - Performance__MaxMetricsHistory=100
+      - Serilog__MinimumLevel__Default=Debug
+      - Serilog__MinimumLevel__Override__Microsoft=Information
+      - Serilog__MinimumLevel__Override__System=Warning
+    volumes:
+      - ./src:/src
+      - app-logs-dev:/app/logs
+    networks:
+      - csharpapp-dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  app-logs-dev:
+    driver: local
+
+networks:
+  csharpapp-dev-network:
+    driver: bridge

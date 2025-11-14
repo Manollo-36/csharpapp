@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  csharpapp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    container_name: csharpapp-api
+    ports:
+      - "5225:8080"
+      - "7225:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081
+      - RestApiSettings__BaseUrl=https://api.escuelajs.co/api/v1/
+      - RestApiSettings__Products=products
+      - RestApiSettings__Categories=categories
+      - RestApiSettings__Auth=auth/login
+      - RestApiSettings__Username=john@mail.com
+      - RestApiSettings__Password=changeme
+      - HttpClientSettings__LifeTime=10
+      - HttpClientSettings__RetryCount=2
+      - HttpClientSettings__SleepDuration=100
+      - Performance__SlowRequestThresholdMs=1000
+      - Performance__LogAllRequests=true
+      - Performance__IncludeBodySizes=true
+      - Performance__MaxMetricsHistory=1000
+      - Serilog__MinimumLevel__Default=Information
+    volumes:
+      - app-logs:/app/logs
+    networks:
+      - csharpapp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Redis for caching (can be added later)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: csharpapp-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - csharpapp-network
+  #   restart: unless-stopped
+
+  # Optional: PostgreSQL database (can be added later)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: csharpapp-postgres
+  #   environment:
+  #     POSTGRES_DB: csharpapp
+  #     POSTGRES_USER: csharpapp
+  #     POSTGRES_PASSWORD: csharpapp123
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - csharpapp-network
+  #   restart: unless-stopped
+
+volumes:
+  app-logs:
+    driver: local
+  # redis-data:
+  #   driver: local
+  # postgres-data:
+  #   driver: local
+
+networks:
+  csharpapp-network:
+    driver: bridge
