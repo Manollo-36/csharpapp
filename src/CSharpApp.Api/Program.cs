@@ -29,6 +29,14 @@ if (app.Environment.IsDevelopment())
 // Performance monitoring middleware (should be early in the pipeline)
 app.UseMiddleware<CSharpApp.Infrastructure.Middleware.PerformanceLoggingMiddleware>();
 
+// Health check endpoint
+app.MapGet("/health", () => Results.Ok(new { 
+    status = "healthy", 
+    timestamp = DateTime.UtcNow,
+    version = "1.0.0",
+    service = "CSharpApp.Api"
+})).WithName("HealthCheck");
+
 //app.UseHttpsRedirection();
 
 var versionedEndpointRouteBuilder = app.NewVersionedApi();
@@ -219,3 +227,6 @@ versionedEndpointRouteBuilder.MapDelete("api/v{version:apiVersion}/performance/m
     .HasApiVersion(1.0);
 
 app.Run();
+
+// Make the Program class accessible for testing
+public partial class Program { }
